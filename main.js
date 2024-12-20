@@ -2,6 +2,24 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 
+
+/*********************
+* SETUP
+* *******************/
+
+let stars = [];
+const numberOfStars = 750; // Change to increase/decrease number of stars rendered
+const starColors = [       // Stars will be rendered with a random color from this array
+    "#ffffff",
+    "#ffd700", 
+    "#ff4500", 
+    "#87ceeb",
+    "#add8e6", 
+    "#f0e68c",
+    "#ffa07a", 
+    "#fffacd", 
+]
+
 const container = document.querySelector("#container");
 const scene = new THREE.Scene();
 
@@ -13,8 +31,6 @@ camera.lookAt(0, 0, 0);         // Center the camera on the origin
 const renderer = new THREE.WebGLRenderer({alpha: true});
 renderer.setSize(window.innerWidth, window.innerHeight);
 container.appendChild(renderer.domElement);
-// renderer.setClearColor("#0b1d4f");
-// document.body.appendChild(renderer.domElement);
 
 // USE ORBIT CONTROLS
 const controls = new OrbitControls(camera, renderer.domElement);
@@ -23,23 +39,11 @@ const controls = new OrbitControls(camera, renderer.domElement);
 * MESHES
 * *******************/
 
-let stars = [];
-const numberOfStars = 750;
-const starColors = [
-    "#ffffff",
-    "#ffd700", 
-    "#ff4500", 
-    "#87ceeb",
-    "#add8e6", 
-    "#f0e68c",
-    "#ffa07a", 
-    "#fffacd", 
-]
-
 function getRandomNum(max, min=0) {
     return Math.floor(Math.random() * (max-min) + min);
 }
 
+// Stars
 for (let index = 0; index < numberOfStars; index++) {
     
     let size = getRandomNum(20, 5);
@@ -60,34 +64,31 @@ for (let index = 0; index < numberOfStars; index++) {
 
 }
 
+// Moon
+
+const textureLoader = new THREE.TextureLoader();
+const moonTexture = textureLoader.load("./2k_moon.jpg");
+
+const geometry = new THREE.SphereGeometry( 250, 32, 16);
+// const material = new THREE.MeshBasicMaterial( { color: "#fffff" } ); 
+const material = new THREE.MeshStandardMaterial({
+    map: moonTexture,
+    bumpMap: moonTexture,
+    bumpScale: 0.1,
+})
+
+const sphere = new THREE.Mesh( geometry, material ); 
+sphere.position.set(0, -250, 0)
+scene.add( sphere );
 
 
+// Scene illumination
+const light = new THREE.DirectionalLight("#fffff", 2); // White light, intensity of 1
+light.position.set(-250, 1000, -250); // Position the light
+scene.add(light);
 
-// USEFULL trick to inspect THREE.JS objects
-// window.sphere = sphere
-// window.cube = cube
-// window.camera = camera
-
-/*********************
-* HELPER to visualize different CSs 
-* *******************/
-// const axesHelper = new THREE.AxesHelper(5);
-// scene.add(axesHelper);
-
-// const axesHelper2 = new THREE.AxesHelper(2);
-// cube.add(axesHelper2);
-
-// const axesHelper3 = new THREE.AxesHelper(2);
-// sphere.add(axesHelper3);
-
-// const axesHelper4 = new THREE.AxesHelper(2);
-// spherePivot.add(axesHelper4);
-
-/**********************
-Control panel
-**********************/
-
-
+const ambientLight = new THREE.AmbientLight("#fffff", 0.25);
+scene.add(ambientLight);
 
 // start the animation
 renderer.setAnimationLoop(render);
