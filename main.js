@@ -8,7 +8,7 @@ import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 * *******************/
 
 let stars = [];
-const numberOfStars = 750; // Change to increase/decrease number of stars rendered
+const numberOfStars = 2500; // Change to increase/decrease number of stars rendered
 const starColors = [       // Stars will be rendered with a random color from this array
     "#ffffff",
     "#ffd700", 
@@ -24,7 +24,7 @@ const container = document.querySelector("#container");
 const scene = new THREE.Scene();
 
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 2000);
-camera.position.set(0, 0, 500); // Move the camera back to see the stars
+camera.position.set(0, 0, 200); // Move the camera back to see the stars
 camera.lookAt(0, 0, 0);         // Center the camera on the origin
 
 
@@ -46,10 +46,17 @@ function getRandomNum(max, min=0) {
 // Stars
 for (let index = 0; index < numberOfStars; index++) {
     
-    let size = getRandomNum(20, 5);
+    let size = getRandomNum(15, 5);
     let color = starColors[Math.floor(getRandomNum(starColors.length))];
     let geometry = new THREE.BufferGeometry();
-    let position = new Float32Array([getRandomNum(1000, -1000), getRandomNum(1000, -1000), getRandomNum(1000, -1000)]);
+    let position;
+    let minDistanceFromCenter = 500; // Controls distance from the moon to the stars
+    
+    // Get a random position for the star, if the position isnt distant enough from the moon it will try to get another position
+    do {
+        position = new Float32Array([getRandomNum(2000, -2000), getRandomNum(2000, -2000), getRandomNum(2000, -2000)]);
+    } while (Math.sqrt(Math.pow(position[0], 2) + Math.pow(position[1], 2) + Math.pow(position[2],2 )) < minDistanceFromCenter);
+
     geometry.setAttribute('position', new THREE.BufferAttribute(position, 3));
 
     let material = new THREE.PointsMaterial({
@@ -78,7 +85,7 @@ const material = new THREE.MeshStandardMaterial({
 })
 
 const sphere = new THREE.Mesh( geometry, material ); 
-sphere.position.set(0, -250, 0)
+sphere.position.set(0, -270, 0)
 scene.add( sphere );
 
 
