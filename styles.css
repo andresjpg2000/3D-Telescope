@@ -1,0 +1,17 @@
+body {
+    margin: 0;
+    overflow: hidden;
+}
+
+#container {
+    width: 100vw;
+    height: 100vh;
+    background: linear-gradient(180deg, rgba(11,29,79,1) 25%, rgb(24, 59, 155) 100%);
+    position: relative;
+}
+canvas {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
