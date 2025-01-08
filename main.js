@@ -8,7 +8,7 @@ import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 * *******************/
 
 let stars = [];
-const numberOfStars = 2500; // Change to increase/decrease number of stars rendered
+const numberOfStars = 20000; // Change to increase/decrease number of stars rendered
 const starColors = [       // Stars will be rendered with a random color from this array
     "#ffffff",
     "#ffd700", 
@@ -23,10 +23,9 @@ const starColors = [       // Stars will be rendered with a random color from th
 const container = document.querySelector("#container");
 const scene = new THREE.Scene();
 
-const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 2000);
-camera.position.set(0, 0, 200); // Move the camera back to see the stars
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 4000);
+camera.position.set(0, 0, 5000); // Move the camera back to see the stars
 camera.lookAt(0, 0, 0);         // Center the camera on the origin
-
 
 const renderer = new THREE.WebGLRenderer({alpha: true});
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -49,12 +48,13 @@ for (let index = 0; index < numberOfStars; index++) {
     let size = getRandomNum(15, 5);
     let color = starColors[Math.floor(getRandomNum(starColors.length))];
     let geometry = new THREE.BufferGeometry();
+    let maxDistance = 10000;
     let position;
     let minDistanceFromCenter = 500; // Controls distance from the moon to the stars
     
     // Get a random position for the star, if the position isnt distant enough from the moon it will try to get another position
     do {
-        position = new Float32Array([getRandomNum(2000, -2000), getRandomNum(2000, -2000), getRandomNum(2000, -2000)]);
+        position = new Float32Array([getRandomNum(maxDistance, -maxDistance), getRandomNum(maxDistance / 10, -maxDistance / 10), getRandomNum(maxDistance, -maxDistance)]);
     } while (Math.sqrt(Math.pow(position[0], 2) + Math.pow(position[1], 2) + Math.pow(position[2],2 )) < minDistanceFromCenter);
 
     geometry.setAttribute('position', new THREE.BufferAttribute(position, 3));
@@ -72,22 +72,30 @@ for (let index = 0; index < numberOfStars; index++) {
 }
 
 // Moon
-
 const textureLoader = new THREE.TextureLoader();
 const moonTexture = textureLoader.load("./2k_moon.jpg");
 
-const geometry = new THREE.SphereGeometry( 250, 32, 16);
+let geometry = new THREE.SphereGeometry( 250, 32, 16);
 // const material = new THREE.MeshBasicMaterial( { color: "#fffff" } ); 
-const material = new THREE.MeshStandardMaterial({
+let material = new THREE.MeshStandardMaterial({
     map: moonTexture,
     bumpMap: moonTexture,
     bumpScale: 0.1,
+    // displacementMap: moonTexture,
+    // displacementScale: 0.35,
+    // displacementBias: -0.035,
 })
 
 const sphere = new THREE.Mesh( geometry, material ); 
 sphere.position.set(0, -270, 0)
 scene.add( sphere );
 
+// Robot
+geometry = new THREE.BoxGeometry(3,2,3);
+material = new THREE.MeshLambertMaterial({color: "#ffff"})
+const robot = new THREE.Mesh(geometry, material);
+robot.position.set(0,-20,0);
+scene.add(robot);
 
 // Scene illumination
 const light = new THREE.DirectionalLight("#fffff", 2); // White light, intensity of 1
@@ -97,18 +105,37 @@ scene.add(light);
 const ambientLight = new THREE.AmbientLight("#fffff", 0.25);
 scene.add(ambientLight);
 
-// start the animation
-renderer.setAnimationLoop(render);
-
-
 /*********************
 * ANIMATION LOOP
 * *******************/
-function render() {
-  
 
+const targetZ = 75;
+const duration = 3000;
+let startTime = null;
+
+function render(time) {
     controls.update();
+    
+    if (!startTime) {
+        startTime = time;
+    }
 
-    // render the scene ("draw" the scene into the Canvas, using the camera's point of view)
+    const elapsed = time - startTime;
+
+    // Calculate new camera position
+    const progress = Math.min(elapsed / duration, 1);
+    let z = 2000 - progress * (2000 - targetZ);
+
+    camera.position.set(0, 0, z);
+
     renderer.render(scene, camera);
-};
+
+    if (progress < 1) {
+        requestAnimationFrame(render);
+    }
+
+}
+
+// start the animation
+renderer.setAnimationLoop(render);
+// requestAnimationFrame(render);
