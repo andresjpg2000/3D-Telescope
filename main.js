@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 
-
 /*********************
 * SETUP
 * *******************/
@@ -24,7 +23,7 @@ const container = document.querySelector("#container");
 const scene = new THREE.Scene();
 
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 4000);
-camera.position.set(0, 0, 5000); // Move the camera back to see the stars
+camera.position.set(0, 0, 2500); // Move the camera back to see the stars
 camera.lookAt(0, 0, 0);         // Center the camera on the origin
 
 const renderer = new THREE.WebGLRenderer({alpha: true});
@@ -48,7 +47,7 @@ for (let index = 0; index < numberOfStars; index++) {
     let size = getRandomNum(15, 5);
     let color = starColors[Math.floor(getRandomNum(starColors.length))];
     let geometry = new THREE.BufferGeometry();
-    let maxDistance = 10000;
+    let maxDistance = 8000;
     let position;
     let minDistanceFromCenter = 500; // Controls distance from the moon to the stars
     
@@ -62,6 +61,7 @@ for (let index = 0; index < numberOfStars; index++) {
     let material = new THREE.PointsMaterial({
         color: color,
         size: size,
+        depthTest: true,
     })
     
     let star = new THREE.Points(geometry, material);
@@ -77,13 +77,11 @@ const moonTexture = textureLoader.load("./2k_moon.jpg");
 
 let geometry = new THREE.SphereGeometry( 250, 32, 16);
 // const material = new THREE.MeshBasicMaterial( { color: "#fffff" } ); 
+
 let material = new THREE.MeshStandardMaterial({
     map: moonTexture,
     bumpMap: moonTexture,
     bumpScale: 0.1,
-    // displacementMap: moonTexture,
-    // displacementScale: 0.35,
-    // displacementBias: -0.035,
 })
 
 const sphere = new THREE.Mesh( geometry, material ); 
@@ -109,33 +107,22 @@ scene.add(ambientLight);
 * ANIMATION LOOP
 * *******************/
 
-const targetZ = 75;
-const duration = 3000;
-let startTime = null;
-
-function render(time) {
+function render() {
     controls.update();
-    
-    if (!startTime) {
-        startTime = time;
-    }
-
-    const elapsed = time - startTime;
-
-    // Calculate new camera position
-    const progress = Math.min(elapsed / duration, 1);
-    let z = 2000 - progress * (2000 - targetZ);
-
-    camera.position.set(0, 0, z);
-
     renderer.render(scene, camera);
-
-    if (progress < 1) {
-        requestAnimationFrame(render);
-    }
 
 }
 
 // start the animation
 renderer.setAnimationLoop(render);
-// requestAnimationFrame(render);
+
+gsap.to(camera, {
+    zoom: 10,
+    duration: 6,
+    ease: "power2.inOut",
+    onUpdate: () => {
+        camera.updateProjectionMatrix();
+        
+        renderer.render(scene, camera);
+    }
+})
