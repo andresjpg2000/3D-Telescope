@@ -6,24 +6,35 @@ import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 * SETUP
 * *******************/
 
-let stars = [];
-const numberOfStars = 20000; // Change to increase/decrease number of stars rendered
-const starColors = [       // Stars will be rendered with a random color from this array
-    "#ffffff",
-    "#ffd700", 
-    "#ff4500", 
-    "#87ceeb",
-    "#add8e6", 
-    "#f0e68c",
-    "#ffa07a", 
-    "#fffacd", 
-]
+// let stars = [];
+const numberOfStars = 50000; // Change to increase/decrease number of stars rendered
+const starColors = [
+    "#ffffff", // Pure white
+    "#f8f8ff", // Ghost white
+    "#ffebcd", // Blanched almond (soft white-yellow)
+    "#fff8dc", // Cornsilk (warm white)
+    "#fffacd", // Lemon chiffon (soft yellow)
+    "#f0e68c", // Khaki (muted yellow)
+    "#ffe4b5", // Moccasin (light yellow-orange)
+    "#ffd700", // Gold (bright yellow)
+    "#fff5ee", // Seashell (off-white)
+    "#fafad2"  // Light goldenrod yellow
+];
 
 const container = document.querySelector("#container");
 const scene = new THREE.Scene();
+const textureLoader = new THREE.TextureLoader();
 
-const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 4000);
-camera.position.set(0, 0, 2500); // Move the camera back to see the stars
+let textureCube = new THREE.CubeTextureLoader()
+    .setPath( './skybox/' )
+    .load( [
+        'right.png','left.png',
+        'top.png', 'bottom.png',
+        'front.png', 'back.png'
+    ] );
+scene.background = textureCube;
+
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 5000);
 camera.lookAt(0, 0, 0);         // Center the camera on the origin
 
 const renderer = new THREE.WebGLRenderer({alpha: true});
@@ -33,56 +44,50 @@ container.appendChild(renderer.domElement);
 // USE ORBIT CONTROLS
 const controls = new OrbitControls(camera, renderer.domElement);
 
-/*********************
-* MESHES
-* *******************/
-
+// METHODS
 function getRandomNum(max, min=0) {
     return Math.floor(Math.random() * (max-min) + min);
 }
 
+/*********************
+* MESHES
+* *******************/
+
 // Stars
-for (let index = 0; index < numberOfStars; index++) {
-    
-    let size = getRandomNum(15, 5);
-    let color = starColors[Math.floor(getRandomNum(starColors.length))];
-    let geometry = new THREE.BufferGeometry();
-    let maxDistance = 8000;
-    let position;
-    let minDistanceFromCenter = 500; // Controls distance from the moon to the stars
-    
-    // Get a random position for the star, if the position isnt distant enough from the moon it will try to get another position
-    do {
-        position = new Float32Array([getRandomNum(maxDistance, -maxDistance), getRandomNum(maxDistance / 10, -maxDistance / 10), getRandomNum(maxDistance, -maxDistance)]);
-    } while (Math.sqrt(Math.pow(position[0], 2) + Math.pow(position[1], 2) + Math.pow(position[2],2 )) < minDistanceFromCenter);
 
-    geometry.setAttribute('position', new THREE.BufferAttribute(position, 3));
+let color = starColors[Math.floor(getRandomNum(starColors.length))];
+let maxDistance = 8000;
 
-    let material = new THREE.PointsMaterial({
-        color: color,
-        size: size,
-        depthTest: true,
-    })
-    
-    let star = new THREE.Points(geometry, material);
+const starGeometry = new THREE.SphereGeometry(1, 4, 4);
+const starMaterial = new THREE.MeshBasicMaterial({ color: "#ffffff" });
+const stars = new THREE.InstancedMesh(starGeometry, starMaterial, numberOfStars);
 
-    scene.add(star);
-    stars.push(star);
+const dummy = new THREE.Object3D();
+for (let i = 0; i < numberOfStars; i++) {
+    dummy.position.set(
+        getRandomNum(maxDistance, -maxDistance),
+        getRandomNum(maxDistance / 10, -maxDistance / 10),
+        getRandomNum(maxDistance, -maxDistance)
+    );
+    dummy.updateMatrix();
+    stars.setMatrixAt(i, dummy.matrix);
+
+    const randomColor = new THREE.Color(starColors[getRandomNum(starColors.length)]);
+    stars.setColorAt(i, randomColor);
 
 }
+scene.add(stars);
 
 // Moon
-const textureLoader = new THREE.TextureLoader();
 const moonTexture = textureLoader.load("./2k_moon.jpg");
 
 let geometry = new THREE.SphereGeometry( 250, 32, 16);
-// const material = new THREE.MeshBasicMaterial( { color: "#fffff" } ); 
 
-let material = new THREE.MeshStandardMaterial({
-    map: moonTexture,
-    bumpMap: moonTexture,
-    bumpScale: 0.1,
-})
+let material = new THREE.MeshStandardMaterial();
+material.color.set("#ffffff");
+material.map = moonTexture;
+material.bumpMap = moonTexture;
+material.bumpScale = 1;
 
 const sphere = new THREE.Mesh( geometry, material ); 
 sphere.position.set(0, -270, 0)
@@ -96,8 +101,8 @@ robot.position.set(0,-20,0);
 scene.add(robot);
 
 // Scene illumination
-const light = new THREE.DirectionalLight("#fffff", 2); // White light, intensity of 1
-light.position.set(-250, 1000, -250); // Position the light
+const light = new THREE.DirectionalLight("#fffff", 2);
+light.position.set(-250, 1000, -250);
 scene.add(light);
 
 const ambientLight = new THREE.AmbientLight("#fffff", 0.25);
@@ -117,12 +122,13 @@ function render() {
 renderer.setAnimationLoop(render);
 
 gsap.to(camera, {
-    zoom: 10,
+    zoom: 5,
     duration: 6,
     ease: "power2.inOut",
     onUpdate: () => {
         camera.updateProjectionMatrix();
         
-        renderer.render(scene, camera);
     }
 })
+
+camera.position.set(0, 0, 500); // Move the camera back to see the stars
