@@ -6,7 +6,6 @@ import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 * SETUP
 * *******************/
 
-// let stars = [];
 const numberOfStars = 50000; // Change to increase/decrease number of stars rendered
 const starColors = [
     "#ffffff", // Pure white
@@ -55,7 +54,6 @@ function getRandomNum(max, min=0) {
 
 // Stars
 
-let color = starColors[Math.floor(getRandomNum(starColors.length))];
 let maxDistance = 8000;
 
 const starGeometry = new THREE.SphereGeometry(1, 4, 4);
@@ -63,6 +61,7 @@ const starMaterial = new THREE.MeshBasicMaterial({ color: "#ffffff" });
 const stars = new THREE.InstancedMesh(starGeometry, starMaterial, numberOfStars);
 
 const dummy = new THREE.Object3D();
+
 for (let i = 0; i < numberOfStars; i++) {
     dummy.position.set(
         getRandomNum(maxDistance, -maxDistance),
@@ -76,7 +75,10 @@ for (let i = 0; i < numberOfStars; i++) {
     stars.setColorAt(i, randomColor);
 
 }
+
 scene.add(stars);
+
+console.log(stars);
 
 // Moon
 const moonTexture = textureLoader.load("./2k_moon.jpg");
@@ -94,11 +96,109 @@ sphere.position.set(0, -270, 0)
 scene.add( sphere );
 
 // Robot
-geometry = new THREE.BoxGeometry(3,2,3);
-material = new THREE.MeshLambertMaterial({color: "#ffff"})
-const robot = new THREE.Mesh(geometry, material);
-robot.position.set(0,-20,0);
+//Materials
+const baseMaterial = new THREE.MeshStandardMaterial({color: "#ffffff"});
+const eyeMaterial = new THREE.MeshStandardMaterial({color: "#000000"});
+const pupilMaterial = new THREE.MeshStandardMaterial({color: "#30e61c"});
+const wheelMaterial = new THREE.MeshStandardMaterial({color: "#000000"});
+
+//Group
+const robot = new THREE.Group();
+
+//Body
+const bodyGeometry = new THREE.BoxGeometry(2, 1, 1.5);
+const body = new THREE.Mesh(bodyGeometry, baseMaterial);
+body.position.set(0, 0.5, 0);
+robot.add(body);
+
+//Neck 
+const neckPoints = [
+    new THREE.Vector3(0, 0, 0),
+    new THREE.Vector3(0.25, 0.5, 0),
+    new THREE.Vector3(0.5, 1, 0),
+]
+const neckCurve = new THREE.CatmullRomCurve3(neckPoints);
+const neckGeometry = new THREE.TubeGeometry(neckCurve, 20, 0.1, 8, false);
+const neck = new THREE.Mesh(neckGeometry, baseMaterial);
+neck.position.set(0.65, 0.9, 0);
+neck.rotation.z = Math.PI / 4; // Neck inclination
+robot.add(neck);
+
+//Head
+const headGeometry = new THREE.BoxGeometry(1, 0.8, 1);
+const head = new THREE.Mesh(headGeometry, baseMaterial);
+head.position.set(0.7, 2, 0);
+robot.add(head);
+
+//Eyes
+const eyesGroup = new THREE.Group();
+
+const eyeGeometry = new THREE.SphereGeometry(0.2, 16, 16);
+const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+const rightEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+leftEye.position.set(1.4, 2.25, 0.3);
+rightEye.position.set(1.4, 2.25, -0.3);
+eyesGroup.add(leftEye);
+eyesGroup.add(rightEye);
+
+const pupilGeometry = new THREE.SphereGeometry(0.1, 16, 16);
+const leftPupil = new THREE.Mesh(pupilGeometry, pupilMaterial);
+const rightPupil = new THREE.Mesh(pupilGeometry, pupilMaterial);
+leftPupil.position.set(1.515, 2.2, 0.2);
+leftPupil.rotation.x = Math.PI * -1;
+rightPupil.position.set(1.515, 2.25, -0.2);
+eyesGroup.add(leftPupil);
+eyesGroup.add(rightPupil);
+eyesGroup.position.x = -0.15;
+eyesGroup.position.y = -0.1;
+
+robot.add(eyesGroup);
+
+//Mouth
+// Create a simple smiling curve using QuadraticBezierCurve3
+const startPoint = new THREE.Vector3(-0.5, 0, 0); // Left side of the mouth
+const controlPoint = new THREE.Vector3(0, 0.3, 0); // The peak of the smile (smiling curve)
+const endPoint = new THREE.Vector3(0.5, 0, 0); // Right side of the mouth
+
+const smileCurve = new THREE.QuadraticBezierCurve3(startPoint, controlPoint, endPoint);
+
+// Create the geometry from the curve
+const smilePoints = smileCurve.getPoints(50); // 50 points to smooth the curve
+const smileGeometry = new THREE.BufferGeometry().setFromPoints(smilePoints);
+
+// Create a line material for the mouth
+const smileMaterial = new THREE.LineBasicMaterial({ color: 0x000000 });
+
+// Create the smile line
+const smileLine = new THREE.Line(smileGeometry, smileMaterial);
+
+// Create a group for the mouth
+const mouthGroup = new THREE.Group();
+mouthGroup.add(smileLine);
+mouthGroup.rotation.x = Math.PI;
+mouthGroup.rotation.y = Math.PI / 2;
+// Position the mouth appropriately (e.g., below the eyes)
+mouthGroup.position.set(1.201, 2, 0);
+
+// Add the mouth group to the scene
+robot.add(mouthGroup);
+
+
+// Wheels
+const wheelGeometry = new THREE.CylinderGeometry(0.2, 0.2, 2.5, 16);
+const leftWheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
+const rightWheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
+leftWheel.rotation.z = Math.PI / 2; 
+rightWheel.rotation.z = Math.PI / 2;
+leftWheel.position.set(0, 0.2, 0.8);
+rightWheel.position.set(0, 0.2, -0.8);
+robot.add(leftWheel);
+robot.add(rightWheel);
+
+robot.rotation.y = -Math.PI / 2;
+robot.position.y = -20;
 scene.add(robot);
+
 
 // Scene illumination
 const light = new THREE.DirectionalLight("#fffff", 2);
@@ -131,4 +231,5 @@ gsap.to(camera, {
     }
 })
 
-camera.position.set(0, 0, 500); // Move the camera back to see the stars
+camera.position.set(0, 0, 300); //Move the camera back to see the stars
+// camera.position.set(0,-5, 60)
