@@ -291,13 +291,12 @@ gsap.to(camera, {
         
         // Store final zoom position
         const finalZoomPosition = camera.position.clone();
-        
         // Calculate the initial follow camera position
         const followPosition = cameraOffset.clone();
         followPosition.applyMatrix4(robot.matrixWorld);
         
         // Create a dummy object to be able to animate camera position and camera lookAt at the same time
-        // 
+        // The object stores the camera position and camera lookAt properties after the zoom animnation ends
         const dummyObject = {
             x: finalZoomPosition.x,
             y: finalZoomPosition.y,
@@ -307,7 +306,7 @@ gsap.to(camera, {
             lookAtZ: robot.position.z
         };
         
-        // Transition to follow camera position, 
+        // Transition to follow camera position
         gsap.to(dummyObject, {
             x: followPosition.x,
             y: followPosition.y,
@@ -334,7 +333,7 @@ gsap.to(camera, {
 });
 
 // 3rd person camera folowing the robot
-const cameraOffset = new THREE.Vector3(0, 120, 120); 
+const cameraOffset = new THREE.Vector3(-100, 10, 0); 
 
 function updateCameraFollow() {
     
