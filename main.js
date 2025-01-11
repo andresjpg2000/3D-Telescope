@@ -78,8 +78,6 @@ for (let i = 0; i < numberOfStars; i++) {
 
 scene.add(stars);
 
-console.log(stars);
-
 // Moon
 const moonTexture = textureLoader.load("./2k_moon.jpg");
 
@@ -195,10 +193,11 @@ rightWheel.position.set(0, 0.2, -0.8);
 robot.add(leftWheel);
 robot.add(rightWheel);
 
+robot.scale.x=2;
+robot.scale.y=2;
+robot.scale.z=2;
 robot.rotation.y = -Math.PI / 2;
-robot.position.y = -20;
-scene.add(robot);
-
+// robot.position.y = -20;
 
 // Scene illumination
 const light = new THREE.DirectionalLight("#fffff", 2);
@@ -212,10 +211,108 @@ scene.add(ambientLight);
 * ANIMATION LOOP
 * *******************/
 
+function placeOnSphere(object, radius, latitude, longitude) {
+    
+    const x = radius * Math.sin(latitude) * Math.cos(longitude);
+    const y = radius * Math.cos(latitude) - 270; // Subtract 270 to account to the moon position (0,-270,0)
+    const z = radius * Math.sin(latitude) * Math.sin(longitude);
+
+    object.position.set(x, y, z);
+
+}
+
+function updateRobotPosition() {
+
+    placeOnSphere(robot, moonRadius, latitude, longitude);
+
+}
+
+// Initial robot position
+const moonRadius = 250;
+let latitude = 0;
+let longitude = Math.PI / 2;
+
+placeOnSphere(robot, moonRadius, latitude, longitude);
+scene.add(robot);
+
+console.log("Robot Position:", robot.position);
+console.log("Moon Center:", sphere.position);
+console.log("Distance from Moon Center:", robot.position.distanceTo(sphere.position));
+
+let moveForward = false;
+let moveBackward = false;
+let turnLeft = false;
+let turnRight = false;
+const speed = 0.5;
+const rotationSpeed = 0.05;
+
+//Robot controls and event listeners
+
+document.addEventListener("keydown", (event) => {
+    switch (event.key) {
+        case "ArrowUp":
+            latitude -= 0.05; // Move towards the north pole
+            break;
+        case "ArrowDown":
+            latitude += 0.05; // Move towards the south pole
+            break;
+        case "ArrowLeft":
+            longitude -= 0.05; // Move west
+            break;
+        case "ArrowRight":
+            longitude += 0.05; // Move east
+            break;
+    }
+
+    placeOnSphere(robot, moonRadius, latitude, longitude);
+})
+
+const cameraOffset = new THREE.Vector3(0, 120, 120); 
+
+function updateCameraFollow() {
+    
+    // Calculate the offset in world space
+    const offset = cameraOffset.clone();
+    offset.applyMatrix4(robot.matrixWorld); // Apply the robot's transformation to the offset
+
+    // Set the camera's position to follow the robot
+    camera.position.copy(offset);
+
+    // Make the camera look at the robot
+    camera.lookAt(robot.position);
+
+}
+
+let isFollowing = false;
+
 function render() {
     controls.update();
-    renderer.render(scene, camera);
 
+    if (moveForward) {
+        robot.position.x -= Math.sin(robot.rotation.y) * speed;
+        robot.position.z -= Math.cos(robot.rotation.y) * speed;
+    }
+
+    if (moveBackward) {
+        robot.position.x += Math.sin(robot.rotation.y) * speed;
+        robot.position.z += Math.cos(robot.rotation.y) * speed;
+    }
+
+    if (turnLeft) {
+        robot.rotation.y +=rotationSpeed;
+    }
+
+    if (turnRight) {
+        robot.rotation.y -=rotationSpeed;
+    }
+
+    if (isFollowing) {
+        updateCameraFollow();
+    }
+    
+    updateRobotPosition()
+
+    renderer.render(scene, camera);
 }
 
 // start the animation
@@ -228,8 +325,10 @@ gsap.to(camera, {
     onUpdate: () => {
         camera.updateProjectionMatrix();
         
+    },
+    onComplete: () => {
+        isFollowing = true;
     }
 })
 
-camera.position.set(0, 0, 300); //Move the camera back to see the stars
-// camera.position.set(0,-5, 60)
+camera.position.set(0, 50, 300); 
