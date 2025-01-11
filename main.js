@@ -94,22 +94,22 @@ sphere.position.set(0, -270, 0)
 scene.add( sphere );
 
 // Robot
-//Materials
+// Materials
 const baseMaterial = new THREE.MeshStandardMaterial({color: "#ffffff"});
 const eyeMaterial = new THREE.MeshStandardMaterial({color: "#000000"});
 const pupilMaterial = new THREE.MeshStandardMaterial({color: "#30e61c"});
 const wheelMaterial = new THREE.MeshStandardMaterial({color: "#000000"});
 
-//Group
+// Group
 const robot = new THREE.Group();
 
-//Body
+// Body
 const bodyGeometry = new THREE.BoxGeometry(2, 1, 1.5);
 const body = new THREE.Mesh(bodyGeometry, baseMaterial);
 body.position.set(0, 0.5, 0);
 robot.add(body);
 
-//Neck 
+// Neck 
 const neckPoints = [
     new THREE.Vector3(0, 0, 0),
     new THREE.Vector3(0.25, 0.5, 0),
@@ -122,13 +122,13 @@ neck.position.set(0.65, 0.9, 0);
 neck.rotation.z = Math.PI / 4; // Neck inclination
 robot.add(neck);
 
-//Head
+// Head
 const headGeometry = new THREE.BoxGeometry(1, 0.8, 1);
 const head = new THREE.Mesh(headGeometry, baseMaterial);
 head.position.set(0.7, 2, 0);
 robot.add(head);
 
-//Eyes
+// Eyes
 const eyesGroup = new THREE.Group();
 
 const eyeGeometry = new THREE.SphereGeometry(0.2, 16, 16);
@@ -152,7 +152,7 @@ eyesGroup.position.y = -0.1;
 
 robot.add(eyesGroup);
 
-//Mouth
+// Mouth
 // Create a simple smiling curve using QuadraticBezierCurve3
 const startPoint = new THREE.Vector3(-0.5, 0, 0); // Left side of the mouth
 const controlPoint = new THREE.Vector3(0, 0.3, 0); // The peak of the smile (smiling curve)
@@ -239,8 +239,7 @@ console.log("Robot Position:", robot.position);
 console.log("Moon Center:", sphere.position);
 console.log("Distance from Moon Center:", robot.position.distanceTo(sphere.position));
 
-//Robot controls and event listeners
-
+// Robot controls and event listeners
 document.addEventListener("keydown", (event) => {
     switch (event.key) {
         case "ArrowUp":
@@ -254,6 +253,19 @@ document.addEventListener("keydown", (event) => {
             break;
         case "ArrowRight":
             longitude += 0.05; // Move east
+            break;
+    }
+
+    placeOnSphere(robot, moonRadius, latitude, longitude);
+})
+
+// Toggle free camera
+document.addEventListener("keydown", (event) => {
+    switch (event.key) {
+        case "f":
+        case "F":
+            isFollowing = !isFollowing;  //Toggle following the robot
+            controls.enabled = !isFollowing; //Toggle controls
             break;
     }
 
@@ -284,7 +296,8 @@ gsap.to(camera, {
         const followPosition = cameraOffset.clone();
         followPosition.applyMatrix4(robot.matrixWorld);
         
-        // Create a dummy object to animate
+        // Create a dummy object to be able to animate camera position and camera lookAt at the same time
+        // 
         const dummyObject = {
             x: finalZoomPosition.x,
             y: finalZoomPosition.y,
@@ -294,7 +307,7 @@ gsap.to(camera, {
             lookAtZ: robot.position.z
         };
         
-        // Animate to follow camera position
+        // Transition to follow camera position, 
         gsap.to(dummyObject, {
             x: followPosition.x,
             y: followPosition.y,
