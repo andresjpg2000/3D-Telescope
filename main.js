@@ -239,13 +239,6 @@ console.log("Robot Position:", robot.position);
 console.log("Moon Center:", sphere.position);
 console.log("Distance from Moon Center:", robot.position.distanceTo(sphere.position));
 
-let moveForward = false;
-let moveBackward = false;
-let turnLeft = false;
-let turnRight = false;
-const speed = 0.5;
-const rotationSpeed = 0.05;
-
 //Robot controls and event listeners
 
 document.addEventListener("keydown", (event) => {
@@ -267,101 +260,100 @@ document.addEventListener("keydown", (event) => {
     placeOnSphere(robot, moonRadius, latitude, longitude);
 })
 
-const cameraOffset = new THREE.Vector3(0, 120, 120); 
-
-function updateCameraFollow() {
-    
-    // Calculate the ideal follow camera position
-    const idealOffset = cameraOffset.clone();
-    idealOffset.applyMatrix4(robot.matrixWorld);
-    
-    if (isTransitioning) {
-        // Update transition progress
-        transitionProgress += (1/60) / transitionDuration; // 60 fps
-        
-        if (transitionProgress >= 1) {
-            isTransitioning = false;
-            isFollowing = true;
-            transitionProgress = 1;
-        }
-        
-        // Interpolate between the initial camera position and the ideal follow position
-        camera.position.lerpVectors(
-            initialCameraPosition,
-            idealOffset,
-            easeInOutCubic(transitionProgress)
-        );
-        
-        // Calculate the ideal look-at position (robot's position)
-        const targetPosition = robot.position.clone();
-        
-        // Interpolate the camera's look-at position
-        const currentTarget = new THREE.Vector3();
-        currentTarget.lerpVectors(
-            initialCameraTarget,
-            targetPosition,
-            easeInOutCubic(transitionProgress)
-        );
-        
-        camera.lookAt(currentTarget);
-    } else if (isFollowing) {
-        // Normal follow camera behavior
-        camera.position.copy(idealOffset);
-        camera.lookAt(robot.position);
-    }
-
-}
-
-function easeInOutCubic(t) {
-    return t < 0.5
-        ? 4 * t * t * t
-        : 1 - Math.pow(-2 * t + 2, 3) / 2;
-}
-
 let isFollowing = false;
-
-function render() {
-    controls.update();
-
-    if (isTransitioning || isFollowing) {
-        updateCameraFollow();
-    }
-    
-    updateRobotPosition()
-
-    renderer.render(scene, camera);
-}
-
-// start the animation
-renderer.setAnimationLoop(render);
-
-// First, store the initial camera position and target
-const initialCameraPosition = new THREE.Vector3(0, 50, 300);
-const initialCameraTarget = new THREE.Vector3(0, 0, 0);
-
-// Add these variables for tracking the transition
-let transitionProgress = 0;
-const transitionDuration = 2; // Duration in seconds
 let isTransitioning = false;
 
+// Disable OrbitControls at start
+controls.enabled = false;
+
+// Zoom animation
 gsap.to(camera, {
     zoom: 5,
     duration: 6,
     ease: "power2.inOut",
     onUpdate: () => {
         camera.updateProjectionMatrix();
-        
     },
     onComplete: () => {
-        
-        // start the transition
         isTransitioning = true;
-        transitionProgress = 0;
         
-        // Store the end position of the zoom for smooth transition
-        initialCameraPosition.copy(camera.position);
-        initialCameraTarget.copy(camera.target || new THREE.Vector3(0, 0, 0));
+        // Store final zoom position
+        const finalZoomPosition = camera.position.clone();
+        
+        // Calculate the initial follow camera position
+        const followPosition = cameraOffset.clone();
+        followPosition.applyMatrix4(robot.matrixWorld);
+        
+        // Create a dummy object to animate
+        const dummyObject = {
+            x: finalZoomPosition.x,
+            y: finalZoomPosition.y,
+            z: finalZoomPosition.z,
+            lookAtX: robot.position.x,
+            lookAtY: robot.position.y,
+            lookAtZ: robot.position.z
+        };
+        
+        // Animate to follow camera position
+        gsap.to(dummyObject, {
+            x: followPosition.x,
+            y: followPosition.y,
+            z: followPosition.z,
+            lookAtX: robot.position.x,
+            lookAtY: robot.position.y,
+            lookAtZ: robot.position.z,
+            duration: 2,
+            ease: "power2.inOut",
+            onUpdate: () => {
+                if (isTransitioning) {
+                    camera.position.set(dummyObject.x, dummyObject.y, dummyObject.z);
+                    camera.lookAt(dummyObject.lookAtX, dummyObject.lookAtY, dummyObject.lookAtZ);
+                }
+            },
+            onComplete: () => {
+                isTransitioning = false;
+                isFollowing = true;
+                // Turn on controls after the transition
+                controls.enabled = true;
+            }
+        });
     }
-})
+});
 
+// 3rd person camera folowing the robot
+const cameraOffset = new THREE.Vector3(0, 120, 120); 
+
+function updateCameraFollow() {
+    
+    const idealOffset = cameraOffset.clone();
+    idealOffset.applyMatrix4(robot.matrixWorld);
+    
+    // Smoothly interpolate camera position
+    camera.position.lerp(idealOffset, 0.1);
+    
+    // Create a target look-at position
+    const targetPosition = robot.position.clone();
+    camera.lookAt(targetPosition);
+
+}
+
+// Initial camera
 camera.position.set(0, 50, 300); 
+camera.lookAt(robot.position);
+
+function render() {
+    // Only update controls when not transitioning or following
+    if (!isTransitioning) {
+        controls.update();
+    }
+
+    if (isFollowing && !isTransitioning) {
+        updateCameraFollow();
+    }
+    
+    updateRobotPosition();
+    renderer.render(scene, camera);
+}
+
+// start the animation
+renderer.setAnimationLoop(render);
