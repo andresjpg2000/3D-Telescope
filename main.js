@@ -99,6 +99,9 @@ const baseMaterial = new THREE.MeshStandardMaterial({color: "#ffffff"});
 const eyeMaterial = new THREE.MeshStandardMaterial({color: "#000000"});
 const pupilMaterial = new THREE.MeshStandardMaterial({color: "#30e61c"});
 const wheelMaterial = new THREE.MeshStandardMaterial({color: "#000000"});
+const telescopeMaterial = new THREE.MeshStandardMaterial({color: "#000000"});
+const telescopeRingMaterial = new THREE.MeshStandardMaterial({color: "#ffffff"});
+const telescopeLensMaterial = new THREE.MeshStandardMaterial({color: "#89cbfa"});
 
 // Group
 const robot = new THREE.Group();
@@ -175,12 +178,11 @@ const mouthGroup = new THREE.Group();
 mouthGroup.add(smileLine);
 mouthGroup.rotation.x = Math.PI;
 mouthGroup.rotation.y = Math.PI / 2;
-// Position the mouth appropriately (e.g., below the eyes)
+// Position the mouth appropriately
 mouthGroup.position.set(1.201, 2, 0);
 
 // Add the mouth group to the scene
 robot.add(mouthGroup);
-
 
 // Wheels
 const wheelGeometry = new THREE.CylinderGeometry(0.2, 0.2, 2.5, 16);
@@ -196,6 +198,48 @@ robot.add(rightWheel);
 robot.scale.x=2;
 robot.scale.y=2;
 robot.scale.z=2;
+
+robot.rotation.x = -Math.PI / 2;
+scene.add(robot);
+
+// Telescope
+// Create a group for the telescope
+const telescopeGroup = new THREE.Group();
+
+// Main tube
+const telescopeTubeGeometry = new THREE.CylinderGeometry(0.05, 0.2, 1.5, 16);
+const telescopeTube = new THREE.Mesh(telescopeTubeGeometry, telescopeMaterial);
+telescopeTube.rotation.z = Math.PI / 2;
+telescopeTube.position.set(0, 10, 30);
+telescopeGroup.add(telescopeTube)
+
+// Details - Rings
+const telescopeRing1Geometry = new THREE.CylinderGeometry(0.05, 0.06, 0.1, 16);
+const telescopeRing1 = new THREE.Mesh(telescopeRing1Geometry, telescopeRingMaterial);
+telescopeRing1.rotation.z = Math.PI / 2;
+telescopeRing1.position.set(-0.75, 10, 30);
+telescopeGroup.add(telescopeRing1);
+
+const telescopeRing2Geometry = new THREE.CylinderGeometry(0.125, 0.15, 0.2, 16);
+const telescopeRing2 = new THREE.Mesh(telescopeRing2Geometry, telescopeRingMaterial);
+telescopeRing2.rotation.z = Math.PI / 2;
+telescopeRing2.position.set(0, 10, 30);
+telescopeGroup.add(telescopeRing2);
+
+const telescopeRing3Geometry = new THREE.CylinderGeometry(0.2, 0.225, 0.2, 16);
+const telescopeRing3 = new THREE.Mesh(telescopeRing3Geometry, telescopeRingMaterial);
+telescopeRing3.rotation.z = Math.PI / 2;
+telescopeRing3.position.set(0.75, 10, 30);
+telescopeGroup.add(telescopeRing3);
+
+// Details - Lens
+const telescopeLensGeometry = new THREE.SphereGeometry(0.205, 16, 16);
+const telescopeLens = new THREE.Mesh(telescopeLensGeometry, telescopeLensMaterial);
+telescopeLens.position.set(0.75, 10, 30);
+telescopeGroup.add(telescopeLens);
+
+telescopeGroup.position.set(0,0,0);
+scene.add(telescopeGroup);
 
 // Scene illumination
 const light = new THREE.DirectionalLight("#fffff", 2);
@@ -254,9 +298,6 @@ function updateRobotPosition() {
 
 }
 
-// placeOnSphere(robot, moonRadius, latitude, longitude);
-scene.add(robot);
-
 // Robot controls and event listeners
 document.addEventListener("keydown", (event) => {
     switch (event.key) {
@@ -286,8 +327,8 @@ document.addEventListener("keydown", (event) => {
     switch (event.key) {
         case "f":
         case "F":
-            isFollowing = !isFollowing;  //Toggle following the robot
-            controls.enabled = !isFollowing; //Toggle controls
+            isFollowing = !isFollowing;  // Toggle following the robot
+            controls.enabled = !isFollowing; // Toggle controls
             break;
     }
 
@@ -301,58 +342,58 @@ let isTransitioning = false;
 controls.enabled = false;
 
 // Zoom animation
-gsap.to(camera, {
-    zoom: 5,
-    duration: 6,
-    ease: "power2.inOut",
-    onUpdate: () => {
-        camera.updateProjectionMatrix();
-    },
-    onComplete: () => {
-        isTransitioning = true;
+// gsap.to(camera, {
+//     zoom: 5,
+//     duration: 6,
+//     ease: "power2.inOut",
+//     onUpdate: () => {
+//         camera.updateProjectionMatrix();
+//     },
+//     onComplete: () => {
+//         isTransitioning = true;
         
-        // Store final zoom position
-        const finalZoomPosition = camera.position.clone();
-        // Calculate the initial follow camera position
-        const followPosition = cameraOffset.clone();
-        followPosition.applyMatrix4(robot.matrixWorld);
+//         // Store final zoom position
+//         const finalZoomPosition = camera.position.clone();
+//         // Calculate the initial follow camera position
+//         const followPosition = cameraOffset.clone();
+//         followPosition.applyMatrix4(robot.matrixWorld);
         
-        // Create a dummy object to be able to animate camera position and camera lookAt at the same time
-        // The object stores the camera position and camera lookAt properties after the zoom animnation ends
-        const dummyObject = {
-            x: finalZoomPosition.x,
-            y: finalZoomPosition.y,
-            z: finalZoomPosition.z,
-            lookAtX: robot.position.x,
-            lookAtY: robot.position.y,
-            lookAtZ: robot.position.z
-        };
+//         // Create a dummy object to be able to animate camera position and camera lookAt at the same time
+//         // The object stores the camera position and camera lookAt properties after the zoom animnation ends
+//         const dummyObject = {
+//             x: finalZoomPosition.x,
+//             y: finalZoomPosition.y,
+//             z: finalZoomPosition.z,
+//             lookAtX: robot.position.x,
+//             lookAtY: robot.position.y,
+//             lookAtZ: robot.position.z
+//         };
         
-        // Transition to follow camera position
-        gsap.to(dummyObject, {
-            x: followPosition.x,
-            y: followPosition.y,
-            z: followPosition.z,
-            lookAtX: robot.position.x,
-            lookAtY: robot.position.y,
-            lookAtZ: robot.position.z,
-            duration: 2,
-            ease: "power2.inOut",
-            onUpdate: () => {
-                if (isTransitioning) {
-                    camera.position.set(dummyObject.x, dummyObject.y, dummyObject.z);
-                    camera.lookAt(dummyObject.lookAtX, dummyObject.lookAtY, dummyObject.lookAtZ);
-                }
-            },
-            onComplete: () => {
-                isTransitioning = false;
-                isFollowing = true;
-                // Turn on controls after the transition
-                controls.enabled = true;
-            }
-        });
-    }
-});
+//         // Transition to follow camera position
+//         gsap.to(dummyObject, {
+//             x: followPosition.x,
+//             y: followPosition.y,
+//             z: followPosition.z,
+//             lookAtX: robot.position.x,
+//             lookAtY: robot.position.y,
+//             lookAtZ: robot.position.z,
+//             duration: 2,
+//             ease: "power2.inOut",
+//             onUpdate: () => {
+//                 if (isTransitioning) {
+//                     camera.position.set(dummyObject.x, dummyObject.y, dummyObject.z);
+//                     camera.lookAt(dummyObject.lookAtX, dummyObject.lookAtY, dummyObject.lookAtZ);
+//                 }
+//             },
+//             onComplete: () => {
+//                 isTransitioning = false;
+//                 isFollowing = true;
+//                 // Turn on controls after the transition
+//                 controls.enabled = true;
+//             }
+//         });
+//     }
+// });
 
 // 3rd person camera folowing the robot
 const cameraOffset = new THREE.Vector3(-300, 20, 0); 
@@ -375,7 +416,8 @@ function updateCameraFollow() {
 }
 
 // Initial camera
-camera.position.set(0, 50, 300); 
+camera.position.set(0.75, 10.25, 32); // camera used while building the 3d models
+// camera.position.set(0, 50, 300); // default camera
 camera.lookAt(robot.position);
 
 function render() {
