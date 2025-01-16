@@ -196,8 +196,6 @@ robot.add(rightWheel);
 robot.scale.x=2;
 robot.scale.y=2;
 robot.scale.z=2;
-robot.rotation.y = -Math.PI / 2;
-// robot.position.y = -20;
 
 // Scene illumination
 const light = new THREE.DirectionalLight("#fffff", 2);
@@ -221,42 +219,66 @@ function placeOnSphere(object, radius, latitude, longitude) {
 
 }
 
+// Initial robot position
+const moonRadius = 250;
+let targetLatitude = 0;
+let targetLongitude = Math.PI / 2;
+let currentLatitude = 0;
+let currentLongitude = Math.PI / 2;
+const lerpFactor = 0.5; // Increase to accelerate movement but decrease smoothness
+
+function calculateNormal(position, center) {
+    return position.clone().sub(center).normalize();
+}
+
 function updateRobotPosition() {
 
-    placeOnSphere(robot, moonRadius, latitude, longitude);
+    // Interpolate the position
+    currentLatitude = THREE.MathUtils.lerp(currentLatitude, targetLatitude, lerpFactor);
+    currentLongitude = THREE.MathUtils.lerp(currentLongitude, targetLongitude, lerpFactor);
+
+    // Place robot on sphere surface
+    placeOnSphere(robot, moonRadius, currentLatitude, currentLongitude);
+
+    // Calculate the up vector (normal to the moon's surface)
+    const moonCenter = sphere.position.clone();
+    const surfaceNormal = calculateNormal(robot.position, moonCenter);
+
+    // Create a quaternion rotation to align the robot with the surface
+    const up = new THREE.Vector3(0, 1, 0);
+    const quaternion = new THREE.Quaternion();
+    quaternion.setFromUnitVectors(up, surfaceNormal);
+
+    // Apply the base rotation (facing tangent to the surface)
+    robot.quaternion.copy(quaternion);
 
 }
 
-// Initial robot position
-const moonRadius = 250;
-let latitude = 0;
-let longitude = Math.PI / 2;
-
-placeOnSphere(robot, moonRadius, latitude, longitude);
+// placeOnSphere(robot, moonRadius, latitude, longitude);
 scene.add(robot);
-
-console.log("Robot Position:", robot.position);
-console.log("Moon Center:", sphere.position);
-console.log("Distance from Moon Center:", robot.position.distanceTo(sphere.position));
 
 // Robot controls and event listeners
 document.addEventListener("keydown", (event) => {
     switch (event.key) {
         case "ArrowUp":
-            latitude -= 0.05; // Move towards the north pole
+        case "w":
+            targetLatitude -= 0.01; // Move towards the north pole
             break;
         case "ArrowDown":
-            latitude += 0.05; // Move towards the south pole
+        case "s":
+            targetLatitude += 0.01; // Move towards the south pole
             break;
         case "ArrowLeft":
-            longitude -= 0.05; // Move west
+        case "a":
+            targetLongitude -= 0.01; // Move west
             break;
         case "ArrowRight":
-            longitude += 0.05; // Move east
+        case "d":
+            targetLongitude += 0.01; // Move east
             break;
     }
 
-    placeOnSphere(robot, moonRadius, latitude, longitude);
+    placeOnSphere(robot, moonRadius, targetLatitude, targetLongitude);
 })
 
 // Toggle free camera
@@ -269,7 +291,7 @@ document.addEventListener("keydown", (event) => {
             break;
     }
 
-    placeOnSphere(robot, moonRadius, latitude, longitude);
+    placeOnSphere(robot, moonRadius, targetLatitude, targetLongitude);
 })
 
 let isFollowing = false;
@@ -333,7 +355,9 @@ gsap.to(camera, {
 });
 
 // 3rd person camera folowing the robot
-const cameraOffset = new THREE.Vector3(-100, 10, 0); 
+const cameraOffset = new THREE.Vector3(-300, 20, 0); 
+const currentLookAtTarget = new THREE.Vector3();
+const targetLookAtPosition = new THREE.Vector3();
 
 function updateCameraFollow() {
     
@@ -341,12 +365,13 @@ function updateCameraFollow() {
     idealOffset.applyMatrix4(robot.matrixWorld);
     
     // Smoothly interpolate camera position
-    camera.position.lerp(idealOffset, 0.1);
-    
-    // Create a target look-at position
-    const targetPosition = robot.position.clone();
-    camera.lookAt(targetPosition);
+    camera.position.lerp(idealOffset, lerpFactor);
+    // Update look-at position target variable
+    targetLookAtPosition.copy(robot.position);
+    // Interpolate the look-at target
+    currentLookAtTarget.lerp(targetLookAtPosition, lerpFactor);
 
+    camera.lookAt(currentLookAtTarget);
 }
 
 // Initial camera
