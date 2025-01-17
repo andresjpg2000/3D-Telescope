@@ -147,7 +147,7 @@ const leftPupil = new THREE.Mesh(pupilGeometry, pupilMaterial);
 const rightPupil = new THREE.Mesh(pupilGeometry, pupilMaterial);
 leftPupil.position.set(1.515, 2.2, 0.2);
 leftPupil.rotation.x = Math.PI * -1;
-rightPupil.position.set(1.515, 2.25, -0.2);
+rightPupil.position.set(1.515, 2.25, -0.29);
 eyesGroup.add(leftPupil);
 eyesGroup.add(rightPupil);
 eyesGroup.position.x = -0.15;
@@ -203,43 +203,43 @@ robot.rotation.x = -Math.PI / 2;
 scene.add(robot);
 
 // Telescope
-// Create a group for the telescope
 const telescopeGroup = new THREE.Group();
 
 // Main tube
 const telescopeTubeGeometry = new THREE.CylinderGeometry(0.05, 0.2, 1.5, 16);
 const telescopeTube = new THREE.Mesh(telescopeTubeGeometry, telescopeMaterial);
 telescopeTube.rotation.z = Math.PI / 2;
-telescopeTube.position.set(0, 10, 30);
+telescopeTube.position.set(0, 0, 0);
 telescopeGroup.add(telescopeTube)
 
 // Details - Rings
 const telescopeRing1Geometry = new THREE.CylinderGeometry(0.05, 0.06, 0.1, 16);
 const telescopeRing1 = new THREE.Mesh(telescopeRing1Geometry, telescopeRingMaterial);
 telescopeRing1.rotation.z = Math.PI / 2;
-telescopeRing1.position.set(-0.75, 10, 30);
+telescopeRing1.position.set(-0.75, 0, 0); 
 telescopeGroup.add(telescopeRing1);
 
 const telescopeRing2Geometry = new THREE.CylinderGeometry(0.125, 0.15, 0.2, 16);
 const telescopeRing2 = new THREE.Mesh(telescopeRing2Geometry, telescopeRingMaterial);
 telescopeRing2.rotation.z = Math.PI / 2;
-telescopeRing2.position.set(0, 10, 30);
+telescopeRing2.position.set(0, 0, 0);  
 telescopeGroup.add(telescopeRing2);
 
 const telescopeRing3Geometry = new THREE.CylinderGeometry(0.2, 0.225, 0.2, 16);
 const telescopeRing3 = new THREE.Mesh(telescopeRing3Geometry, telescopeRingMaterial);
 telescopeRing3.rotation.z = Math.PI / 2;
-telescopeRing3.position.set(0.75, 10, 30);
+telescopeRing3.position.set(0.75, 0, 0);  
 telescopeGroup.add(telescopeRing3);
 
 // Details - Lens
 const telescopeLensGeometry = new THREE.SphereGeometry(0.205, 16, 16);
 const telescopeLens = new THREE.Mesh(telescopeLensGeometry, telescopeLensMaterial);
-telescopeLens.position.set(0.75, 10, 30);
+telescopeLens.position.set(0.75, 0, 0);  
 telescopeGroup.add(telescopeLens);
 
-telescopeGroup.position.set(0,0,0);
-scene.add(telescopeGroup);
+// Telescope group position
+robot.add(telescopeGroup);
+telescopeGroup.position.set(1.515, 2.1, -0.29);  
 
 // Scene illumination
 const light = new THREE.DirectionalLight("#fffff", 2);
@@ -283,7 +283,7 @@ function updateRobotPosition() {
 
     // Place robot on sphere surface
     placeOnSphere(robot, moonRadius, currentLatitude, currentLongitude);
-
+    
     // Calculate the up vector (normal to the moon's surface)
     const moonCenter = sphere.position.clone();
     const surfaceNormal = calculateNormal(robot.position, moonCenter);
@@ -298,37 +298,45 @@ function updateRobotPosition() {
 
 }
 
+let isTelescopeExtended = false;
+let isTelescopeAnimating = false;
+let telescopeExtensionProgress = 0;
+
 // Robot controls and event listeners
 document.addEventListener("keydown", (event) => {
     switch (event.key) {
         case "ArrowUp":
         case "w":
+        case "W":
             targetLatitude -= 0.01; // Move towards the north pole
             break;
         case "ArrowDown":
         case "s":
+        case "S":
             targetLatitude += 0.01; // Move towards the south pole
             break;
         case "ArrowLeft":
         case "a":
+        case "A":
             targetLongitude -= 0.01; // Move west
             break;
         case "ArrowRight":
         case "d":
+        case "D":
             targetLongitude += 0.01; // Move east
             break;
-    }
-
-    placeOnSphere(robot, moonRadius, targetLatitude, targetLongitude);
-})
-
-// Toggle free camera
-document.addEventListener("keydown", (event) => {
-    switch (event.key) {
         case "f":
         case "F":
+            // Toggle free camera
             isFollowing = !isFollowing;  // Toggle following the robot
             controls.enabled = !isFollowing; // Toggle controls
+            break;
+        case "t":
+        case "T":
+            if (!isTelescopeAnimating) {
+                isTelescopeAnimating = true;
+                isTelescopeExtended = !isTelescopeExtended;
+            }
             break;
     }
 
@@ -395,6 +403,31 @@ controls.enabled = false;
 //     }
 // });
 
+function updateTelescopeAnimation() {
+    if (isTelescopeAnimating) {
+        if (isTelescopeExtended) {
+            // Extending
+            telescopeExtensionProgress += 0.05;
+            if (telescopeExtensionProgress >= 1) {
+                telescopeExtensionProgress = 1;
+                isTelescopeAnimating = false;
+            }
+        } else {
+            // Retracting
+            telescopeExtensionProgress -= 0.05;
+            if (telescopeExtensionProgress <= 0) {
+                telescopeExtensionProgress = 0;
+                isTelescopeAnimating = false;
+            }
+        }
+
+        // Apply the animation to telescope parts
+        telescopeTube.scale.y = 1 + telescopeExtensionProgress * 2; // Retract length
+        telescopeRing3.position.x = 0.75 + telescopeExtensionProgress; // Move end ring
+        telescopeLens.position.x = 0.75 + telescopeExtensionProgress; // Move lens with end ring
+    }
+}
+
 // 3rd person camera folowing the robot
 const cameraOffset = new THREE.Vector3(-300, 20, 0); 
 const currentLookAtTarget = new THREE.Vector3();
@@ -416,7 +449,7 @@ function updateCameraFollow() {
 }
 
 // Initial camera
-camera.position.set(0.75, 10.25, 32); // camera used while building the 3d models
+camera.position.set(0, 10, 0); // camera used while building the 3d models
 // camera.position.set(0, 50, 300); // default camera
 camera.lookAt(robot.position);
 
@@ -431,6 +464,7 @@ function render() {
     }
     
     updateRobotPosition();
+    updateTelescopeAnimation();
     renderer.render(scene, camera);
 }
 
