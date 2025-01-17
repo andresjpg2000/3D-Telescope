@@ -95,7 +95,7 @@ scene.add( sphere );
 
 // Robot
 // Materials
-const baseMaterial = new THREE.MeshStandardMaterial({color: "#ffffff"});
+const baseMaterial = new THREE.MeshStandardMaterial({color: "#f5f4f2"});
 const eyeMaterial = new THREE.MeshStandardMaterial({color: "#000000"});
 const pupilMaterial = new THREE.MeshStandardMaterial({color: "#30e61c"});
 const wheelMaterial = new THREE.MeshStandardMaterial({color: "#000000"});
@@ -126,81 +126,12 @@ neck.rotation.z = Math.PI / 4; // Neck inclination
 robot.add(neck);
 
 // Head
+const headGroup = new THREE.Group();
+
 const headGeometry = new THREE.BoxGeometry(1, 0.8, 1);
 const head = new THREE.Mesh(headGeometry, baseMaterial);
 head.position.set(0.7, 2, 0);
-robot.add(head);
-
-// Eyes
-const eyesGroup = new THREE.Group();
-
-const eyeGeometry = new THREE.SphereGeometry(0.2, 16, 16);
-const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
-const rightEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
-leftEye.position.set(1.4, 2.25, 0.3);
-rightEye.position.set(1.4, 2.25, -0.3);
-eyesGroup.add(leftEye);
-eyesGroup.add(rightEye);
-
-const pupilGeometry = new THREE.SphereGeometry(0.1, 16, 16);
-const leftPupil = new THREE.Mesh(pupilGeometry, pupilMaterial);
-const rightPupil = new THREE.Mesh(pupilGeometry, pupilMaterial);
-leftPupil.position.set(1.515, 2.2, 0.2);
-leftPupil.rotation.x = Math.PI * -1;
-rightPupil.position.set(1.515, 2.25, -0.29);
-eyesGroup.add(leftPupil);
-eyesGroup.add(rightPupil);
-eyesGroup.position.x = -0.15;
-eyesGroup.position.y = -0.1;
-
-robot.add(eyesGroup);
-
-// Mouth
-// Create a simple smiling curve using QuadraticBezierCurve3
-const startPoint = new THREE.Vector3(-0.5, 0, 0); // Left side of the mouth
-const controlPoint = new THREE.Vector3(0, 0.3, 0); // The peak of the smile (smiling curve)
-const endPoint = new THREE.Vector3(0.5, 0, 0); // Right side of the mouth
-
-const smileCurve = new THREE.QuadraticBezierCurve3(startPoint, controlPoint, endPoint);
-
-// Create the geometry from the curve
-const smilePoints = smileCurve.getPoints(50); // 50 points to smooth the curve
-const smileGeometry = new THREE.BufferGeometry().setFromPoints(smilePoints);
-
-// Create a line material for the mouth
-const smileMaterial = new THREE.LineBasicMaterial({ color: 0x000000 });
-
-// Create the smile line
-const smileLine = new THREE.Line(smileGeometry, smileMaterial);
-
-// Create a group for the mouth
-const mouthGroup = new THREE.Group();
-mouthGroup.add(smileLine);
-mouthGroup.rotation.x = Math.PI;
-mouthGroup.rotation.y = Math.PI / 2;
-// Position the mouth appropriately
-mouthGroup.position.set(1.201, 2, 0);
-
-// Add the mouth group to the scene
-robot.add(mouthGroup);
-
-// Wheels
-const wheelGeometry = new THREE.CylinderGeometry(0.2, 0.2, 2.5, 16);
-const leftWheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
-const rightWheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
-leftWheel.rotation.z = Math.PI / 2; 
-rightWheel.rotation.z = Math.PI / 2;
-leftWheel.position.set(0, 0.2, 0.8);
-rightWheel.position.set(0, 0.2, -0.8);
-robot.add(leftWheel);
-robot.add(rightWheel);
-
-robot.scale.x=2;
-robot.scale.y=2;
-robot.scale.z=2;
-
-robot.rotation.x = -Math.PI / 2;
-scene.add(robot);
+headGroup.add(head);
 
 // Telescope
 const telescopeGroup = new THREE.Group();
@@ -237,9 +168,63 @@ const telescopeLens = new THREE.Mesh(telescopeLensGeometry, telescopeLensMateria
 telescopeLens.position.set(0.75, 0, 0);  
 telescopeGroup.add(telescopeLens);
 
+const rightEye = telescopeGroup.clone();
+rightEye.position.set(0, 0, 0.55)
+telescopeGroup.add(rightEye);
+
 // Telescope group position
-robot.add(telescopeGroup);
-telescopeGroup.position.set(1.515, 2.1, -0.29);  
+telescopeGroup.scale.set(0.3, 1, 1);
+headGroup.add(telescopeGroup);
+telescopeGroup.position.set(1.15, 2.1, -0.29);  
+
+// Mouth
+// Create a simple smiling curve using QuadraticBezierCurve3
+const startPoint = new THREE.Vector3(-0.5, 0, 0); // Left side of the mouth
+const controlPoint = new THREE.Vector3(0, 0.3, 0); // The peak of the smile (smiling curve)
+const endPoint = new THREE.Vector3(0.5, 0, 0); // Right side of the mouth
+
+const smileCurve = new THREE.QuadraticBezierCurve3(startPoint, controlPoint, endPoint);
+
+// Create the geometry from the curve
+const smilePoints = smileCurve.getPoints(50); // 50 points to smooth the curve
+const smileGeometry = new THREE.BufferGeometry().setFromPoints(smilePoints);
+
+// Create a line material for the mouth
+const smileMaterial = new THREE.LineBasicMaterial({ color: 0x000000 });
+
+// Create the smile line
+const smileLine = new THREE.Line(smileGeometry, smileMaterial);
+
+// Create a group for the mouth
+const mouthGroup = new THREE.Group();
+mouthGroup.add(smileLine);
+mouthGroup.rotation.x = Math.PI;
+mouthGroup.rotation.y = Math.PI / 2;
+// Position the mouth appropriately
+mouthGroup.position.set(1.211, 2, 0);
+
+// Add the mouth group to the head group
+headGroup.add(mouthGroup);
+// Add the head group to the robot
+robot.add(headGroup);
+
+// Wheels
+const wheelGeometry = new THREE.CylinderGeometry(0.2, 0.2, 2.5, 16);
+const leftWheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
+const rightWheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
+leftWheel.rotation.z = Math.PI / 2; 
+rightWheel.rotation.z = Math.PI / 2;
+leftWheel.position.set(0, 0.2, 0.8);
+rightWheel.position.set(0, 0.2, -0.8);
+robot.add(leftWheel);
+robot.add(rightWheel);
+
+robot.scale.x=2;
+robot.scale.y=2;
+robot.scale.z=2;
+
+robot.rotation.x = -Math.PI / 2;
+scene.add(robot);
 
 // Scene illumination
 const light = new THREE.DirectionalLight("#fffff", 2);
@@ -347,7 +332,7 @@ let isFollowing = false;
 let isTransitioning = false;
 
 // Disable OrbitControls at start
-controls.enabled = false;
+controls.enabled = true; // trocar para false depois de acabar modelo
 
 // Zoom animation
 // gsap.to(camera, {
@@ -404,6 +389,7 @@ controls.enabled = false;
 // });
 
 function updateTelescopeAnimation() {
+    
     if (isTelescopeAnimating) {
         if (isTelescopeExtended) {
             // Extending
@@ -421,11 +407,15 @@ function updateTelescopeAnimation() {
             }
         }
 
-        // Apply the animation to telescope parts
-        telescopeTube.scale.y = 1 + telescopeExtensionProgress * 2; // Retract length
-        telescopeRing3.position.x = 0.75 + telescopeExtensionProgress; // Move end ring
-        telescopeLens.position.x = 0.75 + telescopeExtensionProgress; // Move lens with end ring
+        // Animating the telescope parts
+        telescopeTube.scale.y = 1 + telescopeExtensionProgress * 2; // Extend tube length
+        // Calculate the end position of the tube
+        const tubeEndPosition = 0.75 * (1 + telescopeExtensionProgress * 2);
+        // Position ring and lens relative to the tube end
+        telescopeRing3.position.x = tubeEndPosition;
+        telescopeLens.position.x = tubeEndPosition;
     }
+    
 }
 
 // 3rd person camera folowing the robot
